@@ -1,22 +1,22 @@
-#include
-#include //openGL graphics and input
 #include "chip8.h" //cpu core implementation
 
-chip8 myChip8;
+struct chip8 myChip8;
 
 int main(int argc, char **argv){
 	//set up render system and register input callbacks
-	setupGraphics();
-	setupInput();
+	////setupGraphics();
+	//setupInput();
 
 	//init chip8 system and load game into memory
-	myChip8.initialize();
-	myChip8.loadGame("pong");
-
+  chip8Initialize(&myChip8);
+  /*if (chip8LoadGame(&myChip8, "pong") != 0){
+    return 1;
+  }
+  
 	//emulation loop
-	for(;;){
+/*	for(;;){
 		//emulate one cycle
-		myChip8.emulateCycle();
+		myChip8.emulateCycle(&myChip8, &display);
 
 		//if draw flag is set, update the screen
 		if(myChip8.drawFlag){
@@ -26,6 +26,8 @@ int main(int argc, char **argv){
 		//store key press state (press and release)
 		myChip8.setKeys();
 	}
-
+*/
 	return 0;
 }
+
+

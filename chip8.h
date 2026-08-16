@@ -9,21 +9,24 @@ struct chip8{
 	//index register and program counter
 	unsigned short I;
 	unsigned short PC;
-	//16 level stack 
+	//16 level stack only used for return addresses, each addres is 2 bytes
 	unsigned short stack[16];
 	unsigned char sp;
 	//2 timers, delay and sound
 	unsigned char delay_timer;
 	unsigned char sound_timer;
+  //display
+  unsigned long long display[32];
 };
 
 
 void chip8Initialize(struct chip8* c);
 
+void chip8ClearDisplay(struct chip8 *c);
 
-void chip8LoadGame(struct chip8* c, const char* game);
+//int chip8LoadGame(struct chip8* c, const char* game);
 
 
-void chip8EmulateCycle(struct chip8* c);
+void chip8EmulateCycle(struct chip8* c); 
 
 #endif
