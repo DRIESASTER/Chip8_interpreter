@@ -77,7 +77,6 @@ int chip8LoadGame(struct chip8* c, const char* game){
       fclose(pGame); 
       return 1;
     }
-
     c->memory[addres] = ch; addres++;
   }
   fclose(pGame);
@@ -86,28 +85,101 @@ int chip8LoadGame(struct chip8* c, const char* game){
 
 void chip8EmulateCycle(struct chip8* c){
 	//fetch code
-	unsigned short PC = c->PC;
-	
 	//opcodes are 2 bytes, we need to fetch 2 elements thus opc1 is the most significant part
-	unsigned short opcode = c->memory[PC] << 8 | c->memory[PC+1];
-/*	
+	unsigned short opcode = c->memory[c->PC] << 8 | c->memory[c->PC + 1];
+	c->PC += 2;
+
 	//decode opcode
-  //reads the first 4 bits
-  switch (opcode & 0x0FFF){
-    case 0x000{
-      //3 cases here 
-      if (opcode == 0x00E0){
-        //clear the display 
+	//pull out the common fields once so every case below reads like the opcode table
+	//instead of re-deriving (and risking re-breaking) the same masks each time
+	unsigned char  x   = (opcode & 0x0F00) >> 8;  //X register index
+	unsigned char  y   = (opcode & 0x00F0) >> 4;  //Y register index
+	unsigned char  n   = (opcode & 0x000F);       //low nibble
+	unsigned char  nn  = (opcode & 0x00FF);        //low byte / constant
+	unsigned short nnn = (opcode & 0x0FFF);        //low 12 bits / address
 
-      }
-    }*/
-  //}	
-	
-	
-	//execute opcode
-	//update timers
+	//reads the first 4 bits to pick the instruction group
+	switch (opcode & 0xF000){
+		case 0x0000:
+			//3 cases here
+			if (opcode == 0x00E0){
+				//clear the display
+				chip8ClearDisplay(c);
+			} else if (opcode == 0x00EE){
+				//returns from a subroutine - pop the stack
+				//decrement first: sp always points one past the last pushed value
+				c->sp--;
+				c->PC = c->stack[c->sp];
+			} else {
+				//0x0NNN calls machine code at address NNN
+				//no real machine to call into on a modern host, so this is a no-op
+			}
+			break;
+
+		case 0x1000:
+			//jumps to address NNN
+			c->PC = nnn;
+			break;
+
+		case 0x2000:
+			//calls subroutine at NNN
+			if (c->sp >= 16){
+				printf("ERROR stack overflow\n");
+				break;
+			}
+			c->stack[c->sp] = c->PC;
+			c->sp++;
+			c->PC = nnn;
+			break;
+
+		case 0x3000:
+			//0x3XNN
+			//skips next instruction if V[x] == NN
+			if (c->V[x] == nn){
+				c->PC += 2;
+			}
+			break;
+
+		case 0x4000:
+			//0x4XNN
+			//skips next instruction if V[x] != NN
+			if (c->V[x] != nn){
+				c->PC += 2;
+			}
+			break;
+
+		case 0x5000:
+			//0x5XY0
+			//if V[x] == V[y] skips next instruction
+			if (c->V[x] == c->V[y]){
+				c->PC += 2;
+			}
+			break;
+
+		case 0x6000:
+			c->V[x] = nn;
+			break;
+
+		case 0x7000:
+			c->V[x] += nn;
+			break;
+
+		case 0x8000:
+			//0x8XYZ
+			switch (n){
+				case 0x1:
+					//set V[x] = V[y]
+					c->V[x] = c->V[y];
+					break;
+				case 0x2:
+					c->V[x] |= c->V[y];
+					break;
+				default:
+					printf("ERROR unknown 8XY%X opcode: %X\n", n, opcode);
+			}
+			break;
+
+		default:
+			printf("ERROR opcode: %X not found\n", opcode);
+	}
 }
-
-
-//implement all of the opcodes
-
