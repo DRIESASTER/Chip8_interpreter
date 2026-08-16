@@ -63,7 +63,7 @@ void chip8ClearDisplay(struct chip8 *c){
 
 
 //loads the game into the adress starting at byte 512
-int chip8Loadgame(struct chip8* c, const char* game){
+int chip8LoadGame(struct chip8* c, const char* game){
   FILE *pGame = fopen(game, "rb");
   if (pGame == NULL){
     printf("game file not found\n");

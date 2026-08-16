@@ -9,7 +9,7 @@ int main(int argc, char **argv){
 
 	//init chip8 system and load game into memory
   chip8Initialize(&myChip8);
-  /*if (chip8LoadGame(&myChip8, "pong") != 0){
+  if (chip8LoadGame(&myChip8, "Games/pong.ch8") != 0){
     return 1;
   }
   
