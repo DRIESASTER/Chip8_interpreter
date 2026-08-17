@@ -2,32 +2,30 @@
 
 struct chip8 myChip8;
 
-int main(int argc, char **argv){
-	//set up render system and register input callbacks
-	////setupGraphics();
-	//setupInput();
+int main(int argc, char **argv) {
+  // set up render system and register input callbacks
+  ////setupGraphics();
+  // setupInput();
 
-	//init chip8 system and load game into memory
+  // init chip8 system and load game into memory
   chip8Initialize(&myChip8);
-  if (chip8LoadGame(&myChip8, "Games/pong.ch8") != 0){
+  if (chip8LoadGame(&myChip8, "Games/ibm_logo.ch8") != 0) {
     return 1;
   }
-  
-	//emulation loop
-	for(int i=0 ; i<50 ; i++){
-		//emulate one cycle
-		chip8EmulateCycle(&myChip8);
 
-		//if draw flag is set, update the screen
-//		if(myChip8.drawFlag){
-//			drawGraphics();
-//		}
+  // emulation loop
+  for (int i = 0; i < 50; i++) {
+    // emulate one cycle
+    chip8EmulateCycle(&myChip8);
 
-		//store key press state (press and release)
-//		myChip8.setKeys();
-	}
+    // if draw flag is set, update the screen
+    //		if(myChip8.drawFlag){
+    //			drawGraphics();
+    //		}
 
-	return 0;
+    // store key press state (press and release)
+    //		myChip8.setKeys();
+  }
+
+  return 0;
 }
-
-
