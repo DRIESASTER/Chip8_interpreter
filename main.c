@@ -14,19 +14,19 @@ int main(int argc, char **argv){
   }
   
 	//emulation loop
-/*	for(;;){
+	for(int i=0 ; i<50 ; i++){
 		//emulate one cycle
-		myChip8.emulateCycle(&myChip8, &display);
+		chip8EmulateCycle(&myChip8);
 
 		//if draw flag is set, update the screen
-		if(myChip8.drawFlag){
-			drawGraphics();
-		}
+//		if(myChip8.drawFlag){
+//			drawGraphics();
+//		}
 
 		//store key press state (press and release)
-		myChip8.setKeys();
+//		myChip8.setKeys();
 	}
-*/
+
 	return 0;
 }
 
