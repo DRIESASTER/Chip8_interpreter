@@ -94,8 +94,10 @@ void chip8Draw(struct chip8 *c, unsigned char x, unsigned char y,
   unsigned short pixels_loc = c->I;
   for (int i = 0; i < n; i++) {
     // we create a row -> 64 bits -> we need to shift to location x
-    long long c_row = (unsigned long long)(c->memory)[pixels_loc + i]
-                      << (63 - x - 8);
+    unsigned char c_pixels = c->memory[pixels_loc + i];
+    // we need to cast to long long because otherwise we only get 8 bits and
+    // thus can only use the last 1/8th of the display....
+    long long c_row = (long long)c_pixels << (63 - x - 8);
     (c->display)[y + i] ^= c_row;
   }
 
