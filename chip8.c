@@ -111,6 +111,29 @@ void chip8Draw(struct chip8 *c, unsigned char x, unsigned char y,
   }
 }
 
+
+void set_BCD(char x, struct chip8 *c){
+  char hundreds = c->V[x] / 100;
+  char tens = (c->V[x] - hundreds*100) / 10;
+  char singles = c->V[x] - hundreds*100 - tens*10;
+  c->memory[c->I] = hundreds;
+  c->memory[c->I + 1] = tens;
+  c->memory[c->I + 2] = singles;
+}
+
+void reg_dump(char x, struct chip8 *c){
+  for (int i = 0 ; i <= x ; i++){
+    c->memory[c->I + i] = c->V[i];
+  }
+}
+
+void reg_load(char x, struct chip8 *c){
+  for (int i=0 ; i <= x ; i++){
+    c->V[i] = c->memory[i+c->I];
+  }
+}
+
+
 void chip8EmulateCycle(struct chip8 *c) {
   // fetch code
   // opcodes are 2 bytes, we need to fetch 2 elements thus opc1 is the most
@@ -194,12 +217,14 @@ void chip8EmulateCycle(struct chip8 *c) {
   case 0x8000:
     // 0x8XYZ
     switch (n) {
+    case 0x0:
+        c->V[x] = c->V[y];
+        break;
     case 0x1:
-      // set V[x] = V[y]
-      c->V[x] = c->V[y];
+      c->V[x] |= c->V[y];
       break;
     case 0x2:
-      c->V[x] |= c->V[y];
+      c->V[x] &= c->V[y];
       break;
     case 0x3:
       // sets VX to VX xor XY
@@ -276,15 +301,13 @@ void chip8EmulateCycle(struct chip8 *c) {
         c->delay_timer = c->V[x];
         break;
       case 0x55:
-        // reg_dump(c->V[x], &(c->I));
-        printf("todo reg_dump 0x55");
+        reg_dump(x, c);
         break;
       case 0x65:
-        // reg_load(c->V[x], &(c->I));
-        printf("todo reg_load 0x65");
+        reg_load(x, c);
         break;
       default:
-        printf("illegal 0xFXX5 operation");
+        printf("illegal 0xFXX5 operation %X\n");
         break;
       }
       break;
@@ -295,8 +318,12 @@ void chip8EmulateCycle(struct chip8 *c) {
       // most likely incorrect
       c->I = chip8_fontset[c->V[x]];
       break;
+    case 0x3:
+      //set_BCD?
+        set_BCD(x, c);
+        break;
     default:
-      printf("invalid 0xF000 operation");
+      printf("invalid 0xF000 operation: %X\n", opcode);
       break;
     }
     break;
