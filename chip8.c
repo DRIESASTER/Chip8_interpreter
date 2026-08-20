@@ -51,8 +51,6 @@ void chip8Initialize(struct chip8 *c) {
 
   // clear the display
   chip8ClearDisplay(c);
-
-  printf("initialized\n");
 }
 
 void chip8ClearDisplay(struct chip8 *c) {
