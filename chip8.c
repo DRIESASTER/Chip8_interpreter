@@ -112,7 +112,7 @@ void chip8Draw(struct chip8 *c, unsigned char x, unsigned char y,
 }
 
 
-void set_BCD(char x, struct chip8 *c){
+void set_BCD(unsigned char x, struct chip8 *c){
   char hundreds = c->V[x] / 100;
   char tens = (c->V[x] - hundreds*100) / 10;
   char singles = c->V[x] - hundreds*100 - tens*10;
@@ -121,13 +121,13 @@ void set_BCD(char x, struct chip8 *c){
   c->memory[c->I + 2] = singles;
 }
 
-void reg_dump(char x, struct chip8 *c){
+void reg_dump(unsigned char x, struct chip8 *c){
   for (int i = 0 ; i <= x ; i++){
     c->memory[c->I + i] = c->V[i];
   }
 }
 
-void reg_load(char x, struct chip8 *c){
+void reg_load(unsigned char x, struct chip8 *c){
   for (int i=0 ; i <= x ; i++){
     c->V[i] = c->memory[i+c->I];
   }
@@ -251,8 +251,9 @@ void chip8EmulateCycle(struct chip8 *c) {
     }
     break;
   case 0x9000:
-    if (c->V[x] != c->V[y])
-      c->PC++;
+    if (c->V[x] != c->V[y]){
+        c->PC++;
+    }
     break;
   case 0xA000:
     c->I = nnn;
@@ -307,7 +308,7 @@ void chip8EmulateCycle(struct chip8 *c) {
         reg_load(x, c);
         break;
       default:
-        printf("illegal 0xFXX5 operation %X\n");
+        printf("illegal 0xFXX5 operation %X\n", opcode);
         break;
       }
       break;
