@@ -184,26 +184,36 @@ int main(void) {
   printf("[INFO] DXYN executed (see sprite printout above), display[0] = %llx\n",
          c.display[0]);
 
-  // EX9E / EXA1 - key skip instructions: not implemented in chip8.c yet, so
-  // just confirm they don't crash the interpreter.
+  // EX9E - SKP Vx: skip next instruction if key V[x] is pressed.
+  // chip8.h has no keypad array yet, so there is no "pressed" key to give
+  // it - the only state we can assume here is "no key is pressed", in which
+  // case the correct behavior is to NOT skip.
   chip8Initialize(&c);
   run_op(&c, 0xE0, 0x9E);
-  printf("[INFO] EX9E ran (not yet implemented in chip8.c)\n");
+  CHECK("EX9E does not skip when no key is pressed", c.PC, 0x202);
 
+  // EXA1 - SKNP Vx: skip next instruction if key V[x] is NOT pressed.
+  // Same "no key pressed" assumption as above - this one SHOULD skip.
   chip8Initialize(&c);
   run_op(&c, 0xE0, 0xA1);
-  printf("[INFO] EXA1 ran (not yet implemented in chip8.c)\n");
+  CHECK("EXA1 skips when no key is pressed", c.PC, 0x204);
 
-  // FX07 - LD Vx, DT: not yet implemented
+  // FX07 - LD Vx, DT: V[x] = delay_timer
   chip8Initialize(&c);
   c.delay_timer = 0x42;
   run_op(&c, 0xF0, 0x07);
-  printf("[INFO] FX07 ran (not yet implemented in chip8.c)\n");
+  CHECK("FX07 sets V[x] = delay_timer", c.V[0], 0x42);
 
-  // FX0A - LD Vx, K: not yet implemented
+  // FX0A - LD Vx, K: wait for a keypress, then store it in V[x].
+  // This is a genuinely blocking instruction (real interpreters keep
+  // re-running this same opcode, PC not advancing, until a key is hit) -
+  // a single chip8EmulateCycle() call can't meaningfully test "waiting",
+  // and testing it properly needs a keypad array that doesn't exist yet.
+  // Leaving this one without a CHECK until there's a keypad to drive it.
   chip8Initialize(&c);
   run_op(&c, 0xF0, 0x0A);
-  printf("[INFO] FX0A ran (not yet implemented in chip8.c)\n");
+  printf("[INFO] FX0A skipped (needs keypad state + blocking-cycle support "
+         "to test properly)\n");
 
   // FX15 - LD DT, Vx
   chip8Initialize(&c);
@@ -211,11 +221,11 @@ int main(void) {
   run_op(&c, 0xF0, 0x15);
   CHECK("FX15 sets delay_timer = V[x]", c.delay_timer, 0x42);
 
-  // FX18 - LD ST, Vx: not yet implemented (no case for it)
+  // FX18 - LD ST, Vx: sound_timer = V[x]
   chip8Initialize(&c);
   c.V[0] = 0x42;
   run_op(&c, 0xF0, 0x18);
-  printf("[INFO] FX18 ran (not yet implemented in chip8.c)\n");
+  CHECK("FX18 sets sound_timer = V[x]", c.sound_timer, 0x42);
 
   // FX1E - ADD I, Vx
   chip8Initialize(&c);
@@ -231,24 +241,38 @@ int main(void) {
   run_op(&c, 0xF0, 0x29);
   CHECK("FX29 sets I to sprite address for digit V[x]", c.I, 5);
 
-  // FX33 - LD B, Vx (BCD): not yet implemented
+  // FX33 - LD B, Vx (BCD): store the 3 decimal digits of V[x] at
+  // memory[I], memory[I+1], memory[I+2] (hundreds, tens, ones)
   chip8Initialize(&c);
+  c.I = 0x300;
   c.V[0] = 123;
   run_op(&c, 0xF0, 0x33);
-  printf("[INFO] FX33 ran (not yet implemented in chip8.c)\n");
+  CHECK("FX33 stores hundreds digit at memory[I]", c.memory[0x300], 1);
+  CHECK("FX33 stores tens digit at memory[I+1]", c.memory[0x301], 2);
+  CHECK("FX33 stores ones digit at memory[I+2]", c.memory[0x302], 3);
 
-  // FX55 - LD [I], Vx (register dump): not yet implemented
+  // FX55 - LD [I], Vx (register dump): memory[I+i] = V[i] for i = 0..X
+  // use X=2 so the loop behavior (not just a single register) gets tested
   chip8Initialize(&c);
   c.I = 0x300;
   c.V[0] = 0x11;
-  run_op(&c, 0xF0, 0x55);
-  printf("[INFO] FX55 ran (not yet implemented in chip8.c)\n");
+  c.V[1] = 0x22;
+  c.V[2] = 0x33;
+  run_op(&c, 0xF2, 0x55);
+  CHECK("FX55 dumps V[0] to memory[I]", c.memory[0x300], 0x11);
+  CHECK("FX55 dumps V[1] to memory[I+1]", c.memory[0x301], 0x22);
+  CHECK("FX55 dumps V[2] to memory[I+2]", c.memory[0x302], 0x33);
 
-  // FX65 - LD Vx, [I] (register load): not yet implemented
+  // FX65 - LD Vx, [I] (register load): V[i] = memory[I+i] for i = 0..X
   chip8Initialize(&c);
   c.I = 0x300;
-  run_op(&c, 0xF0, 0x65);
-  printf("[INFO] FX65 ran (not yet implemented in chip8.c)\n");
+  c.memory[0x300] = 0x11;
+  c.memory[0x301] = 0x22;
+  c.memory[0x302] = 0x33;
+  run_op(&c, 0xF2, 0x65);
+  CHECK("FX65 loads memory[I] into V[0]", c.V[0], 0x11);
+  CHECK("FX65 loads memory[I+1] into V[1]", c.V[1], 0x22);
+  CHECK("FX65 loads memory[I+2] into V[2]", c.V[2], 0x33);
 
   printf("\n%d passed, %d failed\n", pass_count, fail_count);
   return fail_count != 0;
