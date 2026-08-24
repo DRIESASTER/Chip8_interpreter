@@ -161,7 +161,7 @@ char charToKey(char input){
   return -1;
 }
 
-char awaitKeyAndGet(){
+/*char awaitKeyAndGet(){
   char input;
   while(1){
     input = getchar();
@@ -175,7 +175,7 @@ char awaitKeyAndGet(){
     }
   }
   return input;
-}
+}*/
 
 
 void updateKeypad(struct chip8 *c){
@@ -359,12 +359,17 @@ void chip8EmulateCycle(struct chip8 *c) {
           break;
         case 0xA:
           // c->V[x] = get_key();
-          c->V[x] = awaitKeyAndGet();
+          for(int i=0 ; i<16 ; i++){
+            if(c->keys[i] == 1){
+              c->V[x] = i;
+            }
+            //otherwise continue and check again next cycle
+          }
           break;
         case 0x5:
           switch (nn) {
             case 0x15:
-              c->delay_timer = c->V[x];
+              c->delay_timer = c->V[x] + 1;
               break;
             case 0x55:
               reg_dump(x, c);
@@ -378,7 +383,7 @@ void chip8EmulateCycle(struct chip8 *c) {
           }
           break;
         case 0x8:
-          c->sound_timer = c->V[x];
+          c->sound_timer = c->V[x] + 1;
           break;
         case 0xE:
           c->I += c->V[x];
@@ -400,5 +405,13 @@ void chip8EmulateCycle(struct chip8 *c) {
       break;
     default:
       printf("ERROR opcode: %X not found\n", opcode);
+  }
+
+  //decrease timer
+  if(c->sound_timer > 0){
+    c->sound_timer--;
+  }
+  if(c->delay_timer >0){
+    c->delay_timer--;
   }
 }
