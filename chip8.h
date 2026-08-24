@@ -17,6 +17,7 @@ struct chip8{
 	unsigned char sound_timer;
   //display
   unsigned long long display[32];
+  bool keys[16];
 };
 
 
@@ -26,6 +27,7 @@ void chip8ClearDisplay(struct chip8 *c);
 
 int chip8LoadGame(struct chip8* c, const char* game);
 
+void chip8Draw(struct chip8 *c, unsigned char x, unsigned char y, unsigned char n);
 
 void chip8EmulateCycle(struct chip8* c); 
 
