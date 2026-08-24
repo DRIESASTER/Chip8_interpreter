@@ -133,6 +133,12 @@ void reg_load(unsigned char x, struct chip8 *c){
   }
 }
 
+/*void await_key_press_and_store(struct chip8 *c){
+  while(1){
+
+  }
+}*/
+
 
 void chip8EmulateCycle(struct chip8 *c) {
   // fetch code
@@ -252,7 +258,7 @@ void chip8EmulateCycle(struct chip8 *c) {
     break;
   case 0x9000:
     if (c->V[x] != c->V[y]){
-        c->PC++;
+        c->PC+=2;
     }
     break;
   case 0xA000:
@@ -290,7 +296,7 @@ void chip8EmulateCycle(struct chip8 *c) {
     switch (n) {
     case 0x7:
       // delay_timer
-      printf("delay_timer_TODO");
+      c->V[x] = c->delay_timer;
       break;
     case 0xA:
       // c->V[x] = get_key();
@@ -312,12 +318,17 @@ void chip8EmulateCycle(struct chip8 *c) {
         break;
       }
       break;
+    case 0x8:
+        c->sound_timer = c->V[x];
+        break;
     case 0xE:
       c->I += c->V[x];
       break;
     case 0x9:
-      // most likely incorrect
-      c->I = chip8_fontset[c->V[x]];
+      // sprites are stored in memory starting at adres 0, each sprite is stores alphabetically 0->F and each sprite is 5 bytes
+      char sprite_value = c->V[x] & 0xF;
+      printf("load adress for char %d",c->V[x]); 
+      c->I = sprite_value*5;
       break;
     case 0x3:
       //set_BCD?

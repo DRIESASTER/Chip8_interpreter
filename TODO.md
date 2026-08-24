@@ -4,6 +4,9 @@ this file essentially contains everything that i still need to do (that comes to
 
 ## 1 finish opcodes
 
-0xFX(NN) still need finishing
+need to add keypad
 
+fix sound and delay timer
+
+make it run at 60hz
 
