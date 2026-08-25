@@ -27,6 +27,8 @@ void chip8ClearDisplay(struct chip8 *c);
 
 int chip8LoadGame(struct chip8* c, const char* game);
 
+void updateKeyPress(struct chip8* c, char input, bool press);
+
 void chip8Draw(struct chip8 *c, unsigned char x, unsigned char y, unsigned char n);
 
 void chip8EmulateCycle(struct chip8* c); 

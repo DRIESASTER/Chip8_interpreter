@@ -25,17 +25,6 @@ unsigned char chip8_fontset[80] = {
   0xF0, 0x80, 0xF0, 0x80, 0x80  // F
 };
 
-void setNonCanonical(){
-  struct termios oldt;
-  struct termios newt;
-  tcgetattr(STDIN_FILENO, &oldt); /*store old settings */
-  newt = oldt; /* copy old settings to new settings */
-  newt.c_lflag &= ~(ICANON | ECHO); /* make one change to old settings in new settings */
-  newt.c_cc[VMIN] = 0;   // don't wait for any bytes
-  newt.c_cc[VTIME] = 0;  // no timeout, return immediately
-  tcsetattr(STDIN_FILENO, TCSANOW, &newt); /*apply the new settings immediatly */
-}
-
 void chip8Initialize(struct chip8 *c) {
   // first 512 are reserved for interpreter (outdated but i'm keeping it for
   // authenticity)
@@ -65,7 +54,6 @@ void chip8Initialize(struct chip8 *c) {
 
   // clear the display
   chip8ClearDisplay(c);
-  setNonCanonical();
 }
 
 void chip8ClearDisplay(struct chip8 *c) {
@@ -156,42 +144,20 @@ char charToKey(char input){
     return input - '0';
   }
   else if ((input >= 'a') && (input <= 'f')){
-    return input - 'a';
+    return input - 'a' + 10;
   }
   return -1;
 }
 
-/*char awaitKeyAndGet(){
-  char input;
-  while(1){
-    input = getchar();
-    if (input == EOF){
-      clearerr(stdin);
-      continue;
-    }
-    input = charToKey(input);
-    if(input != -1){
-      break;
-    }
-  }
-  return input;
-}*/
-
-
-void updateKeypad(struct chip8 *c){
-  for(int i=0 ; i<16 ; i++){
-    c->keys[i] = 0;
-  }
-  //now to read the buffer
-  int input = getchar();
-  while(input !=EOF){
-    char key = charToKey((char) input);
-    if(key != -1){
-      c->keys[(unsigned char) key] = 1;
-    }
-    input = getchar();
+//press==1 -> key gets pressed, if 0 -> released
+void updateKeyPress(struct chip8 *c, char input, bool press){
+  char keyIndex = charToKey(input);
+  printf("active key is: %i and pressed=%i\n", keyIndex, press);
+  if (keyIndex != -1){
+    c->keys[(unsigned char)keyIndex] = press;
   }
 }
+
 void chip8EmulateCycle(struct chip8 *c) {
   // fetch code
   // opcodes are 2 bytes, we need to fetch 2 elements thus opc1 is the most
@@ -199,7 +165,6 @@ void chip8EmulateCycle(struct chip8 *c) {
   unsigned short opcode = c->memory[c->PC] << 8 | c->memory[c->PC + 1];
   c->PC += 2;
 
-  updateKeypad(c);
   // decode opcode
   // pull out the common fields once so every case below reads like the opcode
   // table instead of re-deriving (and risking re-breaking) the same masks each
