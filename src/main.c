@@ -124,28 +124,11 @@ bool renderDisplay(){
     return 0;
 }
 
-//what do we really need for a loop, every pressed key should get passed to chip8 or even better just set that key to pressed in chip8? 
-//that's really the only eventqueue i care about for now i'd say? 
-//and keyup the key should get set to 0 again? 
-//makes sense i think? i mean this 'loop' is gonna get checked at the start of every cycle so i think it's good design? every emulation cycle ie 16.667 ms it updates
-
-//
-// bool load(){
-//     SDL_Surface* temp1 = SDL_LoadBMP("sample.bmp");
-//
-//     if (!temp1){
-//         printf("error loading image SDL: %s\n", SDL_GetError());
-//         return 1;
-//     }
-//
-//     //this changes the blitmap format to our windowsurface format, visually does nothing but supposedly more efficient so why not
-//     image1 = SDL_ConvertSurface(temp1, winSurface->format, 0);
-//     return 0;
-// }
-//
 void kill(){
-    //   SDL_FreeSurface(image1);
     SDL_DestroyWindow(win);
+    SDL_DestroyRenderer(renderer);
+    renderer = NULL;
+    win = NULL;
     SDL_Quit();
     return;
 }
