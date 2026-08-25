@@ -19,15 +19,9 @@ struct chip8 c;
 int main(){
     if (init()) return 1;
 
-    //  if (load()) return 1;
-    //
-    // SDL_BlitSurface(image1, NULL, winSurface, NULL);
     SDL_UpdateWindowSurface(win); 
-    // SDL_Delay(1000);
-    bool running = 1;
-    while(running){
-        running = !cycle();
-    }
+
+    while(!cycle());
 
     kill();
     return 0;
@@ -50,12 +44,7 @@ bool init(){
         printf("error creating window and renderer SDL: %s\n", SDL_GetError());
         return 1;
     }
-	//
-	//    winSurface = SDL_GetWindowSurface(win);
-	// if (!winSurface) {
-	//        printf("error getting windowSurface SDL: %s\n", SDL_GetError());
-	// 	return 1;
-	// }
+
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
     // Update window
     SDL_RenderPresent(renderer);
