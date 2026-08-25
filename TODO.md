@@ -4,9 +4,12 @@ this file essentially contains everything that i still need to do (that comes to
 
 ## 1 finish opcodes
 
-need to add keypad
+add sound
 
 fix sound and delay timer
 
 make it run at 60hz
+
+make the display actually work using sdl2
+
 
