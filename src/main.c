@@ -65,7 +65,6 @@ bool init(){
 
 //returns 1 when it needs to stop
 bool cycle(){
-    printf("doing 1 cycle\n");
     Uint32 start_tick = SDL_GetTicks();
     SDL_Event e;
     SDL_Keycode key;
@@ -91,7 +90,7 @@ bool cycle(){
     double elapsed = (double)(end_tick - start_tick);
     double remaining = frame_ms - elapsed;
     if (remaining > 0){
-        SDL_Delay(remaining);
+        SDL_Delay((Uint32)remaining);
     }
     else{
         printf("frame too slow, time to render was %f\n", elapsed);
