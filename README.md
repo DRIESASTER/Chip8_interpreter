@@ -1,7 +1,8 @@
 # Compiling
 
-The included bin should be up to date if not:
-  simply run make, Makefile should take care of the rest.
+The included bin should be up to date if not, simply run:
+make
+Makefile should take care of the rest.
 
 To start the emulator run ./bin <path_to_gamefile>
 
