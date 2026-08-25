@@ -103,17 +103,6 @@ void chip8Draw(struct chip8 *c, unsigned char x, unsigned char y,
     long long c_row = (long long)c_pixels << (63 - x - 8);
     (c->display)[y + i] ^= c_row;
   }
-
-  // display the display in the terminal
-  // printf("\033[H\033[J"); // ANSI escape: clear screen + move cursor home
-  for (int row = 0; row < 32; row++) {
-    for (int col = 0; col < 64; col++) {
-      // bit-packed row: MSB = leftmost pixel
-      unsigned long long bit = (c->display[row] >> (63 - col)) & 1;
-      putchar(bit ? '#' : ' ');
-    }
-    putchar('\n');
-  }
 }
 
 

@@ -6,10 +6,12 @@
 //bool load();
 bool init();
 void kill();
-bool loop();
+bool cycle();
+bool renderDisplay();
 
 SDL_Window* win;
 SDL_Surface* winSurface;
+SDL_Renderer* renderer;
 //SDL_Surface* image1;
 
 struct chip8 c;
@@ -17,14 +19,14 @@ struct chip8 c;
 int main(){
     if (init()) return 1;
 
-  //  if (load()) return 1;
+    //  if (load()) return 1;
     //
     // SDL_BlitSurface(image1, NULL, winSurface, NULL);
     SDL_UpdateWindowSurface(win); 
     // SDL_Delay(1000);
     bool running = 1;
     while(running){
-        running = loop();
+        running = !cycle();
     }
 
     kill();
@@ -43,30 +45,34 @@ bool init(){
         return 1;
     }
 
-    printf("not erroring here at least\n");
-    win = SDL_CreateWindow("GAME", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 640, 320, SDL_WINDOW_SHOWN);
-    if  (!win){
-        printf("error creating window SDL: %s\n", SDL_GetError());
+    int result = SDL_CreateWindowAndRenderer(640, 320, 0, &win, &renderer);
+    if (result != 0){
+        printf("error creating window and renderer SDL: %s\n", SDL_GetError());
         return 1;
     }
-
-    winSurface = SDL_GetWindowSurface(win);
-	if (!winSurface) {
-        printf("error getting windowSurface SDL: %s\n", SDL_GetError());
-		return 1;
-	}
+	//
+	//    winSurface = SDL_GetWindowSurface(win);
+	// if (!winSurface) {
+	//        printf("error getting windowSurface SDL: %s\n", SDL_GetError());
+	// 	return 1;
+	// }
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    // Update window
+    SDL_RenderPresent(renderer);
 
     return 0;
 }
 
-//returns 0 when it needs to stop
-bool loop(){
+//returns 1 when it needs to stop
+bool cycle(){
+    printf("doing 1 cycle\n");
+    Uint32 start_tick = SDL_GetTicks();
     SDL_Event e;
     SDL_Keycode key;
     while (SDL_PollEvent(&e) != 0){
         switch (e.type){
             case SDL_QUIT:
-                return 0;
+                return 1;
             case SDL_KEYDOWN:
             case SDL_KEYUP:
                 key = e.key.keysym.sym;
@@ -75,7 +81,47 @@ bool loop(){
         }
     }
     chip8EmulateCycle(&c);
-    return 1;
+
+    if (renderDisplay() != 0){
+        printf("error rendering display SDL: %s\n", SDL_GetError());
+        return 1;
+    }
+    Uint32 end_tick = SDL_GetTicks();
+    double frame_ms = 1000.0 / 60.0;   
+    double elapsed = (double)(end_tick - start_tick);
+    double remaining = frame_ms - elapsed;
+    if (remaining > 0){
+        SDL_Delay(remaining);
+    }
+    else{
+        printf("frame too slow, time to render was %f\n", elapsed);
+    }
+    //im thinking every emulation cycle we also just render the display even if it doesn't change or smt that's not an issue
+    return 0;
+}
+
+bool renderDisplay(){
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
+    SDL_RenderClear(renderer);
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    struct SDL_Rect rect;
+    rect.w=10;
+    rect.h=10;
+    //renderdisplay is 32 lines of 64ints each, each bit is a pixel
+    for (int row=0; row<32 ; row++){
+        for(int col=0 ; col<64 ; col++){
+            bool bit = (c.display[row] >> (63 - col)) & 1;
+            if (bit == 1){
+                rect.x = col*10;
+                rect.y = row*10;
+                if (SDL_RenderFillRect(renderer, &rect) != 0){
+                    return -1;
+                }
+            }
+        }
+    }
+    SDL_RenderPresent(renderer);
+    return 0;
 }
 
 //what do we really need for a loop, every pressed key should get passed to chip8 or even better just set that key to pressed in chip8? 
@@ -98,7 +144,8 @@ bool loop(){
 // }
 //
 void kill(){
- //   SDL_FreeSurface(image1);
+    //   SDL_FreeSurface(image1);
     SDL_DestroyWindow(win);
     SDL_Quit();
+    return;
 }
