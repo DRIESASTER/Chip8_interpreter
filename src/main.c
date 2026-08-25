@@ -30,7 +30,7 @@ int main(){
 
 bool init(){
     chip8Initialize(&c);
-    if (chip8LoadGame(&c, "Games/ibm_logo.ch8") != 0) {
+    if (chip8LoadGame(&c, "Games/pong2.ch8") != 0) {
         return 1;
     }
 
@@ -78,12 +78,12 @@ bool cycle(){
     double frame_ms = 1000.0 / 60.0;   
     double elapsed = (double)(end_tick - start_tick);
     double remaining = frame_ms - elapsed;
-    if (remaining > 0){
-        SDL_Delay((Uint32)remaining);
-    }
-    else{
-        printf("frame too slow, time to render was %f\n", elapsed);
-    }
+    // if (remaining > 0){
+    //     SDL_Delay((Uint32)remaining);
+    // }
+    // else{
+    //     printf("frame too slow, time to render was %f\n", elapsed);
+    // }
     //im thinking every emulation cycle we also just render the display even if it doesn't change or smt that's not an issue
     return 0;
 }
@@ -98,7 +98,7 @@ bool renderDisplay(){
     //renderdisplay is 32 lines of 64ints each, each bit is a pixel
     for (int row=0; row<32 ; row++){
         for(int col=0 ; col<64 ; col++){
-            bool bit = (c.display[row] >> (63 - col)) & 1;
+            bool bit = (c.display[row] >> (61 - col)) & 1;
             if (bit == 1){
                 rect.x = col*10;
                 rect.y = row*10;
