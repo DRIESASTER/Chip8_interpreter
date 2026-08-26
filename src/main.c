@@ -4,33 +4,42 @@
 #include "chip8.h"
 
 //bool load();
-bool init();
+int init(const char* game);
 void kill();
-bool cycle();
-bool renderDisplay();
+int cycle(Uint32* display_start);
+int renderDisplay();
 
 SDL_Window* win;
 SDL_Surface* winSurface;
 SDL_Renderer* renderer;
-//SDL_Surface* image1;
+int INSTRUCTIONS_PER_SEC = 100;
+int FRAMES_PER_SEC = 60;
 
 struct chip8 c;
 
-int main(){
-    if (init()) return 1;
+int main(int argc, char* argv[]){
+    if (argc < 2){
+        printf("Please provide a game file as argument: ./bin [GAME]\n");
+        return 0;
+    }
+    
+    const char* game = argv[1];
 
-    SDL_UpdateWindowSurface(win); 
+    if (init(game)) return 1;
 
-    while(!cycle());
+    SDL_UpdateWindowSurface(win);  
+    
+    Uint32 display_start = SDL_GetTicks();
+    while(!cycle(&display_start));
 
     kill();
     return 0;
 }
 
 
-bool init(){
+int init(const char* game){
     chip8Initialize(&c);
-    if (chip8LoadGame(&c, "Games/pong2.ch8") != 0) {
+    if (chip8LoadGame(&c, game) != 0) {
         return 1;
     }
 
@@ -45,7 +54,7 @@ bool init(){
         return 1;
     }
 
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    SDL_SetRenderDrawColor(renderer, 0, 55, 25, 255);
     // Update window
     SDL_RenderPresent(renderer);
 
@@ -53,7 +62,7 @@ bool init(){
 }
 
 //returns 1 when it needs to stop
-bool cycle(){
+int cycle(Uint32* display_start){
     Uint32 start_tick = SDL_GetTicks();
     SDL_Event e;
     SDL_Keycode key;
@@ -70,35 +79,42 @@ bool cycle(){
     }
     chip8EmulateCycle(&c);
 
-    if (renderDisplay() != 0){
-        printf("error rendering display SDL: %s\n", SDL_GetError());
-        return 1;
-    }
     Uint32 end_tick = SDL_GetTicks();
-    double frame_ms = 1000.0 / 60.0;   
+    double instruction_ms = 1000.0 / INSTRUCTIONS_PER_SEC;   
     double elapsed = (double)(end_tick - start_tick);
-    double remaining = frame_ms - elapsed;
-    // if (remaining > 0){
-    //     SDL_Delay((Uint32)remaining);
-    // }
-    // else{
-    //     printf("frame too slow, time to render was %f\n", elapsed);
-    // }
-    //im thinking every emulation cycle we also just render the display even if it doesn't change or smt that's not an issue
+    double remaining = instruction_ms - elapsed;
+    double display_ms = 1000.0 / FRAMES_PER_SEC;
+    double elapsed_display = (double)(end_tick - *display_start);
+    double remaining_display = display_ms - elapsed_display;
+    
+    if(remaining_display <= 0){
+        //also decrease timer (60Hz is equal to fps but can separate if preferred)
+        if(c.sound_timer > 0) c.sound_timer--;
+        if(c.delay_timer > 0) c.delay_timer--;
+        c.allow_draw = 1;
+        if(renderDisplay() != 0){
+            printf("error rendering display SDL: %s\n", SDL_GetError());
+            return 1;
+        }
+        *display_start = end_tick;
+    }
+    if (remaining > 0){
+        SDL_Delay((Uint32)remaining);
+    }
     return 0;
 }
 
-bool renderDisplay(){
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
+int renderDisplay(){
+    SDL_SetRenderDrawColor(renderer, 97, 124, 117, 255);
     SDL_RenderClear(renderer);
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    SDL_SetRenderDrawColor(renderer, 0, 55, 25, 255);
     struct SDL_Rect rect;
     rect.w=10;
     rect.h=10;
     //renderdisplay is 32 lines of 64ints each, each bit is a pixel
     for (int row=0; row<32 ; row++){
         for(int col=0 ; col<64 ; col++){
-            bool bit = (c.display[row] >> (61 - col)) & 1;
+            bool bit = (c.display[row] >> (63 - col)) & 1;
             if (bit == 1){
                 rect.x = col*10;
                 rect.y = row*10;
@@ -113,6 +129,8 @@ bool renderDisplay(){
 }
 
 void kill(){
+    printf("kill command issued");
+    SDL_Delay(500);
     SDL_DestroyWindow(win);
     SDL_DestroyRenderer(renderer);
     renderer = NULL;

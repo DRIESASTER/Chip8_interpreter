@@ -18,6 +18,8 @@ struct chip8{
   //display
   unsigned long long display[32];
   bool keys[16];
+	//tests if a draw has already happened for this frame
+  bool allow_draw;
 };
 
 

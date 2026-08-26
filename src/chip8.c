@@ -28,7 +28,7 @@ void chip8Initialize(struct chip8 *c) {
   // authenticity)
   c->PC = 0x200;
   c->I = 0;
-
+  c->allow_draw = 0;
   // load the fontset into memory
   for (int i = 0; i < 80; i++) {
     c->memory[i] = chip8_fontset[i];
@@ -52,6 +52,7 @@ void chip8Initialize(struct chip8 *c) {
 
   // clear the display
   chip8ClearDisplay(c);
+  srand(time(NULL));
 }
 
 void chip8ClearDisplay(struct chip8 *c) {
@@ -60,7 +61,7 @@ void chip8ClearDisplay(struct chip8 *c) {
   }
 }
 
-// loads the game into the adress starting at byte 512
+// loads the game into the adress starting at byte 512:
 int chip8LoadGame(struct chip8 *c, const char *game) {
   FILE *pGame = fopen(game, "rb");
   if (pGame == NULL) {
@@ -86,21 +87,46 @@ int chip8LoadGame(struct chip8 *c, const char *game) {
 
 void chip8Draw(struct chip8 *c, unsigned char x, unsigned char y,
                unsigned char n) {
+
+  //check if draw has happened in this frame
+  if (!c->allow_draw){
+    c->PC -= 2;
+    return;
+  }
+  c->allow_draw = 0;
   // Draws a sprite at coordinate x,y, that has a width of 8 pixels (1 byte) and
   // height of n pixels each row of 8 pixels is read as bit-coded starting from
   // memory location c->I I's value does not change after the execution of this
   // instruction c->V[0xF] is set to 1 if any screen pixels are flipped from set
-  // to unset (1->0) and to 0 if it doesn't occur
-  printf("draw at x=%d y=%d n=%d I=%d\n", x, y, n, c->I);
+  // to unset (1->0) and to 0 if it desn't occur
+  //printf("draw at x=%d y=%d n=%d I=%d\n", x, y, n, c->I);
+  x &= 63;
+  y &= 31;
+  bool collision = 0;
   unsigned short pixels_loc = c->I;
   for (int i = 0; i < n; i++) {
+    if(y + i > 31){
+      break;
+    }
     // we create a row -> 64 bits -> we need to shift to location x
-    unsigned char c_pixels = c->memory[pixels_loc + i];
+    unsigned long long c_pixels = c->memory[pixels_loc + i];
     // we need to cast to long long because otherwise we only get 8 bits and
     // thus can only use the last 1/8th of the display....
-    long long c_row = (long long)c_pixels << (63 - x - 8);
+    // so if we are near the right edge we dont draw 8 bits but 8-(64-x) bits
+    bool full_byte_fits = (64 - x) / 8;
+    unsigned long long c_row;
+    if(full_byte_fits){
+      c_row = (unsigned long long)c_pixels << (64 - x - 8);
+    }
+    //so in this case we need to cut off bits instead of adding in
+    else{
+      c_row = (unsigned long long)c_pixels >> (8 - (64 - x)); 
+    }
+    //check for collision
+    collision |= (c->display[y + i] & c_row) > 0;
     (c->display)[y + i] ^= c_row;
   }
+  c->V[15] = collision;
 }
 
 
@@ -113,16 +139,19 @@ void set_BCD(unsigned char x, struct chip8 *c){
   c->memory[c->I + 2] = singles;
 }
 
+//so the reason i'm not putting I in the loop is cause depending on the 'spec' I needs to be incremented or not, easier to adjust this way 
 void reg_dump(unsigned char x, struct chip8 *c){
   for (int i = 0 ; i <= x ; i++){
     c->memory[c->I + i] = c->V[i];
   }
+  c->I += x + 1;
 }
 
 void reg_load(unsigned char x, struct chip8 *c){
   for (int i=0 ; i <= x ; i++){
     c->V[i] = c->memory[i+c->I];
   }
+  c->I += x + 1;
 }
 
 char charToKey(char input){
@@ -139,7 +168,6 @@ char charToKey(char input){
 //press==1 -> key gets pressed, if 0 -> released
 void updateKeyPress(struct chip8 *c, char input, bool press){
   char keyIndex = charToKey(input);
-  printf("active key is: %i and pressed=%i\n", keyIndex, press);
   if (keyIndex != -1){
     c->keys[(unsigned char)keyIndex] = press;
   }
@@ -162,6 +190,7 @@ void chip8EmulateCycle(struct chip8 *c) {
   unsigned char nn = (opcode & 0x00FF);     // low byte / constant
   unsigned short nnn = (opcode & 0x0FFF);   // low 12 bits / address
 
+  bool flag = 0;
   // reads the first 4 bits to pick the instruction group
   switch (opcode & 0xF000) {
     case 0x0000:
@@ -233,28 +262,41 @@ void chip8EmulateCycle(struct chip8 *c) {
           break;
         case 0x1:
           c->V[x] |= c->V[y];
+          c->V[15] = 0;
           break;
         case 0x2:
           c->V[x] &= c->V[y];
+          c->V[15] = 0;
           break;
         case 0x3:
           // sets VX to VX xor XY
           c->V[x] ^= c->V[y];
+          c->V[15] = 0;
           break;
         case 0x4:
+          flag = (c->V[x] + c->V[y]) >= (1 << 8);
           c->V[x] += c->V[y];
+          c->V[15] = flag;
           break;
         case 0x5:
+          flag = c->V[x] >= c->V[y]; 
           c->V[x] -= c->V[y];
+          c->V[15] = flag;
           break;
         case 0x6:
+          flag = c->V[x] & 1;
           c->V[x] >>= 1;
+          c->V[15] = flag;
           break;
         case 0x7:
+          flag = c->V[y] >= c->V[x];
           c->V[x] = c->V[y] - c->V[x];
+          c->V[15] = flag;
           break;
         case 0xE:
+          flag = c->V[x] & 128;
           c->V[x] <<= 1;
+          c->V[15] = flag;
           break;
         default:
           printf("ERROR unknown 8XY%X opcode: %X\n", n, opcode);
@@ -273,7 +315,6 @@ void chip8EmulateCycle(struct chip8 *c) {
       c->PC = c->V[0] + nnn;
       break;
     case 0xC000:
-      srand(time(NULL));
       c->V[x] = rand() % 256 & nn;
       break;
     case 0xD000:
@@ -283,17 +324,11 @@ void chip8EmulateCycle(struct chip8 *c) {
     case 0xE000:
       switch (n) {
         case 0xE:
-          printf("TODO 0xE9E");
-          // if(key() == c->V[x]);
-          // c->PC++;
           if (c->keys[c->V[x]] == 1){
             c->PC += 2;
           }
           break;
         case 0x1:
-          // TODO
-          printf("todo 0xEA1");
-          // if (key() != c->V[x]);
           if (c->keys[c->V[x]] == 0){
             c->PC += 2;
           }
@@ -343,7 +378,6 @@ void chip8EmulateCycle(struct chip8 *c) {
         case 0x9:
           // sprites are stored in memory starting at adres 0, each sprite is stores alphabetically 0->F and each sprite is 5 bytes
           char sprite_value = c->V[x] & 0xF;
-          printf("load adress for char %d",c->V[x]); 
           c->I = sprite_value*5;
           break;
         case 0x3:
@@ -357,13 +391,5 @@ void chip8EmulateCycle(struct chip8 *c) {
       break;
     default:
       printf("ERROR opcode: %X not found\n", opcode);
-  }
-
-  //decrease timer
-  if(c->sound_timer > 0){
-    c->sound_timer--;
-  }
-  if(c->delay_timer >0){
-    c->delay_timer--;
   }
 }
