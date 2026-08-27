@@ -284,8 +284,8 @@ void chip8EmulateCycle(struct chip8 *c) {
           c->V[15] = flag;
           break;
         case 0x6:
-          flag = c->V[x] & 1;
-          c->V[x] >>= 1;
+          flag = c->V[y] & 1;
+          c->V[x] = c->V[y] >> 1;
           c->V[15] = flag;
           break;
         case 0x7:
@@ -294,8 +294,8 @@ void chip8EmulateCycle(struct chip8 *c) {
           c->V[15] = flag;
           break;
         case 0xE:
-          flag = c->V[x] & 128;
-          c->V[x] <<= 1;
+          flag = c->V[y] & 128;
+          c->V[x] = c->V[y] << 1;
           c->V[15] = flag;
           break;
         default:
@@ -346,7 +346,7 @@ void chip8EmulateCycle(struct chip8 *c) {
           break;
         case 0xA:
           // c->V[x] = get_key();
-          //big quirk, it needs to wait for 4 cycles of the sound timer before checking release
+          //big quirk, it needs to wait for 4 cycles of the delay timer before checking release
           if (c->awaiting_bounce_delay && c->delay_timer == 0 && c->keys[c->V[x]] == 0){
             c->awaiting_bounce_delay = 0;
             break;

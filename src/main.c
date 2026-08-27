@@ -12,23 +12,26 @@ int renderDisplay();
 SDL_Window* win;
 SDL_Surface* winSurface;
 SDL_Renderer* renderer;
+SDL_AudioDeviceID audioDev;
+SDL_AudioSpec want, have;
 int INSTRUCTIONS_PER_SEC = 800;
 int FRAMES_PER_SEC = 60;
 
 struct chip8 c;
-
+int audioCounter = 0;
+float last_note = -1;
 int main(int argc, char* argv[]){
     if (argc < 2){
         printf("Please provide a game file as argument: ./bin [GAME]\n");
         return 0;
     }
-    
+
     const char* game = argv[1];
 
     if (init(game)) return 1;
 
     SDL_UpdateWindowSurface(win);  
-    
+
     Uint32 display_start = SDL_GetTicks();
     while(!cycle(&display_start));
 
@@ -36,6 +39,17 @@ int main(int argc, char* argv[]){
     return 0;
 }
 
+void audioCallback(void *userdata, Uint8 *stream, int len) {
+    float *out = (float*) stream;
+    int num_samples = len / sizeof(float);
+    for (int i = 0 ; i < num_samples ; i++){
+        audioCounter++;
+        if(audioCounter % 10 == 0){
+            last_note = -last_note;
+        }
+        out[i] = last_note;
+    }
+}
 
 int init(const char* game){
     chip8Initialize(&c);
@@ -54,6 +68,14 @@ int init(const char* game){
         return 1;
     }
 
+    want.freq = 8000;
+    want.format = AUDIO_F32;
+    want.channels = 1;
+    want.samples = 512;
+    want.callback = audioCallback;
+    want.userdata = NULL;
+    audioDev = SDL_OpenAudioDevice(NULL, 0, &want, &have, SDL_AUDIO_ALLOW_FORMAT_CHANGE);
+    
     SDL_SetRenderDrawColor(renderer, 0, 55, 25, 255);
     // Update window
     SDL_RenderPresent(renderer);
@@ -86,11 +108,13 @@ int cycle(Uint32* display_start){
     double display_ms = 1000.0 / FRAMES_PER_SEC;
     double elapsed_display = (double)(end_tick - *display_start);
     double remaining_display = display_ms - elapsed_display;
-    
     if(remaining_display <= 0){
         //await release decrement if bigger than 0
         //also decrease timer (60Hz is equal to fps but can separate if preferred)
-        if(c.sound_timer > 0) c.sound_timer--;
+        if(c.sound_timer > 0) {
+            SDL_PauseAudioDevice(audioDev, 0);
+            c.sound_timer--;
+        } else SDL_PauseAudioDevice(audioDev, 1);
         if(c.delay_timer > 0) c.delay_timer--;
         c.allow_draw = 1;
         if(renderDisplay() != 0){
