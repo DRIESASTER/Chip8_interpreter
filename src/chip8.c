@@ -351,6 +351,10 @@ void chip8EmulateCycle(struct chip8 *c) {
             c->awaiting_bounce_delay = 0;
             break;
           }
+          if (c->awaiting_bounce_delay){
+            c->PC -=2;
+            break;
+          }
           bool set = 0;
           for(int i=0 ; i<16 ; i++){
             if(c->keys[i] == 1){
@@ -361,7 +365,7 @@ void chip8EmulateCycle(struct chip8 *c) {
             }
             //otherwise continue and check again next cycle
           }
-          if (c->awaiting_bounce_delay | !set) c->PC -=2;
+          if (!set) c->PC -=2;
           break;
         case 0x5:
           switch (nn) {
