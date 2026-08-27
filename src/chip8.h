@@ -20,6 +20,8 @@ struct chip8{
   bool keys[16];
 	//tests if a draw has already happened for this frame
   bool allow_draw;
+  //waits for key release
+	bool awaiting_bounce_delay;
 };
 
 

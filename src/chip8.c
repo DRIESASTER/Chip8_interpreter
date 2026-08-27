@@ -346,12 +346,22 @@ void chip8EmulateCycle(struct chip8 *c) {
           break;
         case 0xA:
           // c->V[x] = get_key();
+          //big quirk, it needs to wait for 4 cycles of the sound timer before checking release
+          if (c->awaiting_bounce_delay && c->delay_timer == 0 && c->keys[c->V[x]] == 0){
+            c->awaiting_bounce_delay = 0;
+            break;
+          }
+          bool set = 0;
           for(int i=0 ; i<16 ; i++){
             if(c->keys[i] == 1){
               c->V[x] = i;
+              c->delay_timer = 4;
+              c->awaiting_bounce_delay = 1;
+              set = 1;
             }
             //otherwise continue and check again next cycle
           }
+          if (c->awaiting_bounce_delay | !set) c->PC -=2;
           break;
         case 0x5:
           switch (nn) {

@@ -12,7 +12,7 @@ int renderDisplay();
 SDL_Window* win;
 SDL_Surface* winSurface;
 SDL_Renderer* renderer;
-int INSTRUCTIONS_PER_SEC = 100;
+int INSTRUCTIONS_PER_SEC = 800;
 int FRAMES_PER_SEC = 60;
 
 struct chip8 c;
@@ -88,6 +88,7 @@ int cycle(Uint32* display_start){
     double remaining_display = display_ms - elapsed_display;
     
     if(remaining_display <= 0){
+        //await release decrement if bigger than 0
         //also decrease timer (60Hz is equal to fps but can separate if preferred)
         if(c.sound_timer > 0) c.sound_timer--;
         if(c.delay_timer > 0) c.delay_timer--;
