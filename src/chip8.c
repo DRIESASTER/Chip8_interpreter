@@ -28,7 +28,7 @@ void chip8Initialize(struct chip8 *c) {
   // authenticity)
   c->PC = 0x200;
   c->I = 0;
-  c->allow_draw = 0;
+  c->allow_draw= 1;
   // load the fontset into memory
   for (int i = 0; i < 80; i++) {
     c->memory[i] = chip8_fontset[i];
@@ -88,12 +88,10 @@ int chip8LoadGame(struct chip8 *c, const char *game) {
 void chip8Draw(struct chip8 *c, unsigned char x, unsigned char y,
                unsigned char n) {
 
-  //check if draw has happened in this frame
-  if (!c->allow_draw){
+  if(!c->allow_draw){
     c->PC -= 2;
     return;
   }
-  c->allow_draw = 0;
   // Draws a sprite at coordinate x,y, that has a width of 8 pixels (1 byte) and
   // height of n pixels each row of 8 pixels is read as bit-coded starting from
   // memory location c->I I's value does not change after the execution of this
@@ -127,6 +125,7 @@ void chip8Draw(struct chip8 *c, unsigned char x, unsigned char y,
     (c->display)[y + i] ^= c_row;
   }
   c->V[15] = collision;
+  c->allow_draw = 0;
 }
 
 
@@ -366,7 +365,7 @@ void chip8EmulateCycle(struct chip8 *c) {
         case 0x5:
           switch (nn) {
             case 0x15:
-              c->delay_timer = c->V[x] + 1;
+              c->delay_timer = c->V[x];
               break;
             case 0x55:
               reg_dump(x, c);
@@ -380,7 +379,7 @@ void chip8EmulateCycle(struct chip8 *c) {
           }
           break;
         case 0x8:
-          c->sound_timer = c->V[x] + 1;
+          c->sound_timer = c->V[x];
           break;
         case 0xE:
           c->I += c->V[x];

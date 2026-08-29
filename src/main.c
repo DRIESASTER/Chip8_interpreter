@@ -14,7 +14,7 @@ SDL_Surface* winSurface;
 SDL_Renderer* renderer;
 SDL_AudioDeviceID audioDev;
 SDL_AudioSpec want, have;
-int INSTRUCTIONS_PER_SEC = 800;
+int INSTRUCTIONS_PER_SEC = 600;
 int FRAMES_PER_SEC = 60;
 
 struct chip8 c;
@@ -40,11 +40,12 @@ int main(int argc, char* argv[]){
 }
 
 void audioCallback(void *userdata, Uint8 *stream, int len) {
+    (void)userdata;
     float *out = (float*) stream;
     int num_samples = len / sizeof(float);
     for (int i = 0 ; i < num_samples ; i++){
         audioCounter++;
-        if(audioCounter % 10 == 0){
+        if(audioCounter % 20 == 0){
             last_note = -last_note;
         }
         out[i] = last_note;
@@ -76,7 +77,7 @@ int init(const char* game){
     want.userdata = NULL;
     audioDev = SDL_OpenAudioDevice(NULL, 0, &want, &have, SDL_AUDIO_ALLOW_FORMAT_CHANGE);
     
-    SDL_SetRenderDrawColor(renderer, 0, 55, 25, 255);
+    SDL_SetRenderDrawColor(renderer, 116, 133, 77, 255);
     // Update window
     SDL_RenderPresent(renderer);
 
@@ -112,9 +113,10 @@ int cycle(Uint32* display_start){
         //await release decrement if bigger than 0
         //also decrease timer (60Hz is equal to fps but can separate if preferred)
         if(c.sound_timer > 0) {
-            SDL_PauseAudioDevice(audioDev, 0);
+            if (SDL_GetAudioDeviceStatus(audioDev) == SDL_AUDIO_PAUSED) SDL_PauseAudioDevice(audioDev, 0);
             c.sound_timer--;
-        } else SDL_PauseAudioDevice(audioDev, 1);
+            if (c.sound_timer == 0) SDL_PauseAudioDevice(audioDev, 1);
+        }
         if(c.delay_timer > 0) c.delay_timer--;
         c.allow_draw = 1;
         if(renderDisplay() != 0){
@@ -130,9 +132,9 @@ int cycle(Uint32* display_start){
 }
 
 int renderDisplay(){
-    SDL_SetRenderDrawColor(renderer, 97, 124, 117, 255);
+    SDL_SetRenderDrawColor(renderer, 179, 207, 112, 255);
     SDL_RenderClear(renderer);
-    SDL_SetRenderDrawColor(renderer, 0, 55, 25, 255);
+    SDL_SetRenderDrawColor(renderer, 116, 133, 77, 255);
     struct SDL_Rect rect;
     rect.w=10;
     rect.h=10;
