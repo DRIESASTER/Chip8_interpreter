@@ -1,5 +1,7 @@
 #ifndef CHIP8_H
 #define CHIP8_H
+#include <stdint.h>
+#include <stdbool.h>
 
 struct chip8{
 	//4kB mem
@@ -16,7 +18,7 @@ struct chip8{
 	unsigned char delay_timer;
 	unsigned char sound_timer;
   //display
-  unsigned long long display[32];
+  uint64_t display[32];
   bool keys[16];
   //waits for key release
 	bool awaiting_bounce_delay;
