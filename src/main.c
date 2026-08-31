@@ -4,6 +4,7 @@
 #include "chip8.h"
 #include "audio.h"
 #include "display.h"
+#include "timers.h"
 
 int init(const char* game);
 void kill();
@@ -11,7 +12,6 @@ int cycle(Uint32* display_start);
 
 struct chip8 c;
 int INSTRUCTIONS_PER_SEC = 600;
-int TIMERS_HZ = 60;
 int main(int argc, char* argv[]){
     if (argc < 2){
         printf("Please provide a game file as argument: ./bin [GAME]\n");
@@ -61,30 +61,19 @@ int cycle(Uint32* display_start){
                 break;
         }
     }
+
     chip8EmulateCycle(&c);
 
     Uint32 end_tick = SDL_GetTicks();
     double instruction_ms = 1000.0 / INSTRUCTIONS_PER_SEC;   
     double elapsed = (double)(end_tick - start_tick);
     double remaining = instruction_ms - elapsed;
-    double timer_refresh_rate_ms = 1000.0 / TIMERS_HZ;
-    double elapsed_since_last_countdown = (double)(end_tick - *display_start);
-    double remaining_untill_next_countdown = timer_refresh_rate_ms - elapsed_since_last_countdown;
+
     if (displayCycle(c.display, &c.allow_draw) != 0) return 1;
-    if(remaining_untill_next_countdown <= 0){
-        //await release decrement if bigger than 0
-        //also decrease timer (60Hz is equal to fps but can separate if preferred)
-        changeAudioStatus(!(c.sound_timer > 0));
-        if(c.sound_timer > 0) {
-            c.sound_timer--;
-        }
-        if(c.delay_timer > 0) c.delay_timer--;
-        *display_start = end_tick;
-    }
+    timerCycle(&c.sound_timer, &c.delay_timer);
     if (remaining > 0){
         SDL_Delay((Uint32)remaining);
     }
-    printf("cycle");
     return 0;
 }
 

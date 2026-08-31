@@ -3,8 +3,8 @@
 
 static SDL_Renderer* renderer;
 static SDL_Window* win;
-int FRAMES_PER_SEC = 60;
-uint32_t last_refresh;
+static int FRAMES_PER_SEC = 60;
+static uint32_t last_refresh;
 
 int initDisplay(){
     int result = SDL_CreateWindowAndRenderer(640, 320, 0, &win, &renderer);
@@ -49,10 +49,8 @@ int displayCycle( uint64_t display[32], bool* allow_draw){
     double refresh_rate_ms = 1000.0 / FRAMES_PER_SEC;
     double elapsed_since_last_refresh = (double)(current_tick - last_refresh);
     double remaining_untill_next_refresh_ms = refresh_rate_ms - elapsed_since_last_refresh;
-    printf("%f ms remaining", remaining_untill_next_refresh_ms);
     if(remaining_untill_next_refresh_ms <= 0){
         if(renderDisplay(display) != 0){
-            printf("error rendering display SDL: %s\n", SDL_GetError());
             return 1;
         }
         last_refresh = SDL_GetTicks();
